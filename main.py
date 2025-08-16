@@ -1,22 +1,32 @@
 import time
 import ollama
 import pyperclip
-from dotenv import load_dotenv
-import os
 import requests
+import json
+from langdetect import detect
 
-load_dotenv()
+with open("config.json", "r", encoding="utf-8") as f:
+    CONFIG = json.load(f)
 
-MODEL_NAME = os.getenv("MODEL_NAME")
-ANKI_CONNECT_URL = os.getenv("ANKI_CONNECT_URL")
-DECK_NAME = os.getenv("DECK_NAME")
-MODEL_NAME_ANKI = os.getenv("MODEL_NAME_ANKI")
+# Access configuration values
+MODEL_NAME = CONFIG["ollama"]["model_name"]
+ANKI_CONFIG = CONFIG["anki"]
+
+LANG_MAP = {
+    "pl": "Polish",
+    "es": "Spanish",
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+}
 
 
 def add_anki_note(front: str, back: str):
     """Adds a new note (flashcard) to Anki using AnkiConnect."""
-    if not all([ANKI_CONNECT_URL, DECK_NAME, MODEL_NAME_ANKI]):
-        print("Error: Anki variables are not set in the .env file.")
+    if not all([ANKI_CONFIG["connect_url"], ANKI_CONFIG["deck_name"], ANKI_CONFIG["model_name"]]):
+        print("Error: Anki configuration is incomplete in config.json")
         return
 
     payload = {
@@ -24,8 +34,8 @@ def add_anki_note(front: str, back: str):
         "version": 6,
         "params": {
             "note": {
-                "deckName": DECK_NAME,
-                "modelName": MODEL_NAME_ANKI,
+                "deckName": ANKI_CONFIG["deck_name"],
+                "modelName": ANKI_CONFIG["model_name"],
                 "fields": {
                     "Front": front,
                     "Back": back
@@ -36,7 +46,7 @@ def add_anki_note(front: str, back: str):
     }
     
     try:
-        response = requests.post(ANKI_CONNECT_URL, json=payload)
+        response = requests.post(ANKI_CONFIG["connect_url"], json=payload)
         response.raise_for_status()
         print("Flashcard added successfully to Anki.")
     except requests.exceptions.RequestException as e:
@@ -45,22 +55,33 @@ def add_anki_note(front: str, back: str):
 
 
 def interpret_with_ollama(text: str):
-
-  if not MODEL_NAME:
-        print("Error: Ollama MODEL_NAME is not set in the .env file.")
+    language_code = detect(text)
+    language_name = LANG_MAP.get(language_code, "the same language as the input")
+    if not MODEL_NAME:
+        print("Error: Ollama model_name is not set in config.json")
         return
-  try:
-    response: ollama.ChatResponse = ollama.chat(model=MODEL_NAME, messages=[
-      {
-        'role': 'user',
-        'content': 'Could you translate this to spanish (just response the translation): ?' + text,
-      },
-    ])
-    add_anki_note(front=text, back=response['message']['content'])
-    print("Response: ", response['message']['content'])
-
-  except Exception as e:
-    print(f"Error with Ollama: {e}")
+    try:
+        if CONFIG["mode"] == "translate":
+            prompt = f"Translate this text to {CONFIG['target_language']} (only translation, no explanations):\n{text}"
+        else:
+            prompt = (
+                f"Explain the following word, expression, or text in simple terms. "
+                f"Respond only with the explanation, using the same language as the input "
+                f"({language_name}). Do not give translations or alternatives.\n\n"
+                f"Text: {text}"
+            )
+    
+            response: ollama.ChatResponse = ollama.chat(model=MODEL_NAME, messages=[
+            {
+                'role': 'user',
+                'content': prompt,
+            },
+            ])
+            add_anki_note(front=text, back=response['message']['content'])
+            print(f"Language detected: {language_name}")
+            print("Response: ", response['message']['content'])
+    except Exception as e:
+        print(f"Error with Ollama: {e}")
 
 
 def main():
