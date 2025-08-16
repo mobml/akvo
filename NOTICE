@@ -1,0 +1,40 @@
+Copyright 2025 Oscar Murrieta
+
+This product includes software developed by Oscar Murrieta.
+
+This project was developed in Python and integrates third-party libraries, 
+each licensed under their respective terms:
+
+- Python Software Foundation:
+  Python Programming Language, available at https://www.python.org/
+  Copyright © 2001-2025 Python Software Foundation.
+  License: PSF License.
+
+- AnkiConnect (Anki integration):
+  Copyright © Ankitects.
+  License: GNU Affero General Public License v3 (AGPL-3.0).
+  https://github.com/FooSoft/anki-connect
+
+- Requests (HTTP requests):
+  Copyright © 2011 Kenneth Reitz.
+  License: Apache License 2.0.
+  https://requests.readthedocs.io/
+
+- Ollama (local language model):
+  Copyright © Ollama.
+  License: MIT.
+  https://github.com/ollama/ollama
+
+- Pyperclip (clipboard management):
+  Copyright © 2013–2025 Al Sweigart.
+  License: BSD.
+  https://github.com/asweigart/pyperclip
+
+- langdetect (language detection):
+  Based on the work of Shuyo Nakatani.
+  Copyright © 2011 Michal Danilák.
+  License: Apache License 2.0.
+  https://github.com/Mimino666/langdetect
+
+This product may include other open-source components, 
+each licensed under their respective terms.
