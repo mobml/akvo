@@ -21,7 +21,7 @@ Akvo is a small Python utility that automates sentence mining for language learn
 
 ## Installation
 1. Clone or download the repository.
-    ````powershell
+    ```powershell
         git clone https://github.com/mobml/akvo
     ```
 
