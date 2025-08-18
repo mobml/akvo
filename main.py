@@ -4,6 +4,7 @@ import pyperclip
 import requests
 import json
 from langdetect import detect
+from prompts import SYSTEM_PROMPT
 
 with open("config.json", "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
@@ -73,6 +74,10 @@ def interpret_with_ollama(text: str):
     
             response: ollama.ChatResponse = ollama.chat(model=MODEL_NAME, messages=[
             {
+                'role': 'system',
+                'content': SYSTEM_PROMPT,
+            }
+            ,{
                 'role': 'user',
                 'content': prompt,
             },
