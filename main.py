@@ -29,7 +29,6 @@ def add_anki_note(front: str, back: str):
     if not all([ANKI_CONFIG["connect_url"], ANKI_CONFIG["deck_name"], ANKI_CONFIG["model_name"]]):
         print("Error: Anki configuration is incomplete in config.json")
         return
-
     payload = {
         "action": "addNote",
         "version": 6,
@@ -58,39 +57,65 @@ def add_anki_note(front: str, back: str):
 def interpret_with_ollama(text: str):
     language_code = detect(text)
     language_name = LANG_MAP.get(language_code, "the same language as the input")
+    target_language_code = CONFIG.get("target_language", "en")
+    target_language_name = LANG_MAP.get(target_language_code)
     if not MODEL_NAME:
         print("Error: Ollama model_name is not set in config.json")
         return
     try:
-        if CONFIG["mode"] == "translate":
-            prompt = f"Translate this text to {CONFIG['target_language']} (only translation, no explanations):\n{text}"
+        if CONFIG['mode'] == "translate":
+            prompt = (
+                f"Task: Translate the following text into {target_language_name}. \n"
+                f"Objective: Provide only the translation, without explanations, alternatives, or commentary. \n"
+                f"Constraints: The output must be a single, clear translation in {target_language_name}. "
+                f"No additional notes or formatting. \n\n"
+                f"Text to translate:\n{text}"
+            )
+
+        elif CONFIG["mode"] == "explain":
+            prompt = (
+                f"Task: Explain the following word, phrase, or text in simple terms. \n"
+                f"Objective: Help the learner understand the meaning in {language_name}, "
+                f"using straightforward vocabulary and clear phrasing. \n"
+                f"Constraints: Respond only with the explanation in {language_name}. "
+                f"Do not provide translations, alternatives, or switch languages. "
+                f"Keep the explanation short, precise, and easy to follow. \n\n"
+                f"Text to explain:\n{text}"
+            )
         else:
             prompt = (
-                f"Explain the following word, expression, or text in simple terms. "
-                f"Respond only with the explanation, using the same language as the input "
-                f"({language_name}). Do not give translations or alternatives.\n\n"
-                f"Text: {text}"
+                f"Task: Rewrite the following text in simpler {language_name}. \n"
+                f"Objective: Lower the text difficulty to the specified target level (e.g., C1 → B1) "
+                f"while preserving the original meaning. \n"
+                f"Constraints: Use the same language as the input. "
+                f"Simplify vocabulary and sentence structures, but do not remove essential meaning. "
+                f"If no target level is specified, default to B1. "
+                f"Keep the output short, clear, and learner-friendly. \n\n"
+                f"Text to simplify:\n{text}"
             )
     
-            response: ollama.ChatResponse = ollama.chat(model=MODEL_NAME, messages=[
-            {
-                'role': 'system',
-                'content': SYSTEM_PROMPT,
-            }
-            ,{
-                'role': 'user',
-                'content': prompt,
-            },
-            ])
-            add_anki_note(front=text, back=response['message']['content'])
-            print(f"Language detected: {language_name}")
-            print("Response: ", response['message']['content'])
+        response: ollama.ChatResponse = ollama.chat(model=MODEL_NAME, messages=[
+        {
+            'role': 'system',
+            'content': SYSTEM_PROMPT,
+        }
+        ,{
+            'role': 'user',
+            'content': prompt,
+        },
+        ])
+        add_anki_note(front=text, back=response['message']['content'])
+        print(f"Language detected: {language_name}")
+        print("Target language: ", CONFIG.get("target_language", "N/A"))
+        print("Response: ", response['message']['content'])
     except Exception as e:
         print(f"Error with Ollama: {e}")
 
 
 def main():
-    print("Akvo is running. Copy some text to translate/explain it...")  
+    print("Akvo is running. Copy some text to translate/explain it...")
+    print("Model:", MODEL_NAME)
+    print("Mode:", CONFIG["mode"])
     last_clipboard_content = pyperclip.paste()
     while True:
         try:
